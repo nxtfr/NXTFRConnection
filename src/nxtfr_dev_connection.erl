@@ -1,7 +1,11 @@
 -module(nxtfr_dev_connection).
 
--export([connected/1]).
+-define(LOGIN, 1).
+-define(REGISTER, 1).
+-define(PLAYING, 1).
 
-connected(Packet, State, Data) ->
-    error_logger:info_report({?MODULE, Packet, State, Data}),
-    {next_state, State, Data};
+-export([connected/2]).
+
+connected(Packet, Data) ->
+    error_logger:info_report({?MODULE, {packet, Packet}, connected, Data}),
+    {next_state, connected, Data}.

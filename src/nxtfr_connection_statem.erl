@@ -16,14 +16,13 @@ init([CallbackModule, TransportModule, Socket]) ->
         callback_module = CallbackModule,
         transport_module = TransportModule,
         socket=Socket},
-    {ok, connection, Data}.
+    {ok, connected, Data}.
 
 callback_mode() ->
     handle_event_function.
 
-handle_event(_, {ssl, Socket, Packet}, State, #data{callback_module = CallbackModule} = Data) ->
-    error_logger:info_report({?MODULE, Packet, State, CallbackModule}),
-    {next_state, State, Data};
+handle_event(_, {ssl, Socket, Packet} = Event, State, #data{callback_module = CallbackModule} = Data) ->
+    apply(CallbackModule, State, [Packet, Data]);
 
 handle_event(_, Event, State, Data) ->
     error_logger:info_report({?MODULE, Event, State}),
