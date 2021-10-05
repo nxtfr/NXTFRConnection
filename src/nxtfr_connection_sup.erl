@@ -38,11 +38,11 @@ init([]) ->
             start_link,
             [[
                 {callback_module, nxtfr_dev_connection},
-                {transport_module, gen_tcp},
-                %{dhfile, "priv/dh2048.pem"},
-                %{cacertfile, "priv/rootca.crt"},
-                %{certfile, "priv/user.crt"},
-                %{keyfile, "priv/user.key"},
+                {transport_module, ssl},
+                {dhfile, "priv/dh2048.pem"},
+                {cacertfile, "priv/rootca.crt"},
+                {certfile, "priv/user.crt"},
+                {keyfile, "priv/user.key"},
                 {packet, 2},
                 {port, 2000},
                 {reuseaddr, true}

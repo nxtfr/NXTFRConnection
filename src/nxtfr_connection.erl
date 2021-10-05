@@ -2,11 +2,9 @@
 -behaviour(gen_server).
 
 -define(DEFAULT_TCP_OPTS, [
-    binary,
     {nodelay, false},
     {packet, 2},
-    {reuseaddr, true},
-    {active, false}]).
+    {reuseaddr, true}]).
 
 %% External exports
 -export([start_link/1]).
@@ -122,7 +120,7 @@ extract_tcp_options(UserOptions) ->
     extract_tcp_options([dhfile, cacertfile, certfile, keyfile, nodelay, packet, reuseaddr], UserOptions, ?DEFAULT_TCP_OPTS, []).
 
 extract_tcp_options([], _UserOptions, _DefaultOptions, Acc) ->
-    lists:flatten(Acc);
+    lists:flatten([[binary, {active, false}] | Acc]);
 
 extract_tcp_options([Key | Rest], UserOptions, DefaultOptions, Acc) ->
     case proplists:lookup(Key, UserOptions) of
