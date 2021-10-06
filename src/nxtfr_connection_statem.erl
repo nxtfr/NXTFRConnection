@@ -22,6 +22,7 @@ callback_mode() ->
     handle_event_function.
 
 handle_event(info, {ssl, Socket, Packet}, State, #data{callback_module = CallbackModule, transport_module = TransportModule} = Data) ->
+    TransportModule:setopts(Socket, [{active, once}]),
     case apply(CallbackModule, State, [Packet, Data]) of
         {next_state, NextState, NewData} ->
             {next_state, NextState, NewData};
