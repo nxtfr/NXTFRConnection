@@ -25,10 +25,11 @@
     connections = 0
     }).
 
-start_link(UserOptions) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [UserOptions], []).
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
     
-init([UserOptions]) ->
+init([]) ->
+    {ok, UserOptions} = application:get_env(nxtfr_connection, options),
     CallbackModule = get_user_option(callback_module, UserOptions, mandatory),
     Port = get_user_option(port, UserOptions, mandatory),
     TransportModule = get_user_option(transport_module, UserOptions, gen_tcp),

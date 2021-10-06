@@ -16,15 +16,6 @@
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
-%% sup_flags() = #{strategy => strategy(),         % optional
-%%                 intensity => non_neg_integer(), % optional
-%%                 period => pos_integer()}        % optional
-%% child_spec() = #{id => child_id(),       % mandatory
-%%                  start => mfargs(),      % mandatory
-%%                  restart => restart(),   % optional
-%%                  shutdown => shutdown(), % optional
-%%                  type => worker(),       % optional
-%%                  modules => modules()}   % optional
 init([]) ->
     SupFlags = #{
         strategy => one_for_one,
@@ -33,20 +24,7 @@ init([]) ->
 
     NxtfrConnection = #{
         id => nxtfr_connection,
-        start => {
-            nxtfr_connection,
-            start_link,
-            [[
-                {callback_module, nxtfr_dev_connection},
-                {transport_module, ssl},
-                {dhfile, "priv/dh2048.pem"},
-                {cacertfile, "priv/rootca.crt"},
-                {certfile, "priv/user.crt"},
-                {keyfile, "priv/user.key"},
-                {packet, 2},
-                {port, 2000},
-                {reuseaddr, true}
-                ]]
+        start => {nxtfr_connection, start_link, []
         }},
 
     NxtfrConnectionStateMSup = #{
@@ -56,5 +34,3 @@ init([]) ->
 
     ChildSpecs = [NxtfrConnection, NxtfrConnectionStateMSup],
     {ok, {SupFlags, ChildSpecs}}.
-
-%% internal functions
