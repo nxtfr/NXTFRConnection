@@ -109,7 +109,7 @@ accept_tcp(ListenSocket, CallbackModule) ->
             case nxtfr_connection_statem_sup:start(CallbackModule, gen_tcp, Socket) of
                 {ok, Pid} ->
                     gen_tcp:controlling_process(Socket, Pid),
-                    gen_tcp:setopts(Socket, [{active, once}]);
+                    inet:setopts(Socket, [{active, once}]);
                 Error ->
                     error_logger:info_report([{accept_tcp, Error}])
             end;
