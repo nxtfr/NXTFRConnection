@@ -7,9 +7,20 @@
    [kernel,
     stdlib
    ]},
-  {env,[]},
+  {env,[
+    {options, [
+        {callback_module, ao_connection},
+        {transport_module, ssl},
+        {dhfile, "certs/dh2048.pem"},
+        {cacertfile, "certs/rootca.crt"},
+        {certfile, "certs/user.crt"},
+        {keyfile, "certs/user.key"},
+        {packet, 2},
+        {port, 2000},
+        {reuseaddr, true}
+    ]}
+  ]},
   {modules, []},
-
   {licenses, ["MIT License"]},
   {links, []}
  ]}.
