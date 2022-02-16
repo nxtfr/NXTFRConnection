@@ -1,26 +1,33 @@
 {application, nxtfr_connection,
- [{description, "An OTP application"},
+ [{description, "Nextgen Game Framework Connection Server"},
   {vsn, "0.1.0"},
   {registered, []},
   {mod, {nxtfr_connection_app, []}},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    nxtfr_event,
+    nxtfr_autodiscovery
    ]},
   {env,[
     {options, [
-        {callback_module, ao_connection},
+        {callback_module, nxtfr_dev_connection},
         {transport_module, ssl},
-        {dhfile, "certs/dh2048.pem"},
-        {cacertfile, "certs/rootca.crt"},
-        {certfile, "certs/user.crt"},
-        {keyfile, "certs/user.key"},
+        {dhfile, "priv/dh2048.pem"},
+        {cacertfile, "priv/rootca.crt"},
+        {certfile, "priv/user.crt"},
+        {keyfile, "priv/user.key"},
         {packet, 2},
         {port, 2000},
         {reuseaddr, true}
     ]}
   ]},
-  {modules, []},
+  {modules, [
+    nxtfr_connection,
+    nxtfr_connection_statem,
+    nxtfr_connection_statem_sup,
+    nxtfr_connection_app,
+    nxtfr_connection_sup]},
   {licenses, ["MIT License"]},
   {links, []}
  ]}.

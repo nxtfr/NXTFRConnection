@@ -1,4 +1,5 @@
 -module(nxtfr_connection).
+-author("christian@flodihn.se").
 -behaviour(gen_server).
 
 -define(DEFAULT_TCP_OPTS, [

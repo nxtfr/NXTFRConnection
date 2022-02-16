@@ -4,7 +4,7 @@
 %%%-------------------------------------------------------------------
 
 -module(nxtfr_connection_sup).
-
+-author("christian@flodihn.se").
 -behaviour(supervisor).
 
 -export([start_link/0]).

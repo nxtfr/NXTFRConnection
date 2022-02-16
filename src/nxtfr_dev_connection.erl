@@ -1,4 +1,5 @@
 -module(nxtfr_dev_connection).
+-author("christian@flodihn.se").
 
 -define(LOGIN, 1).
 -define(REGISTER, 2).

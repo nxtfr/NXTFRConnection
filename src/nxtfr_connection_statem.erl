@@ -1,5 +1,5 @@
 -module(nxtfr_connection_statem).
-
+-author("christian@flodihn.se").
 -behaviour(gen_statem).
 
 -export([start_link/3]).
