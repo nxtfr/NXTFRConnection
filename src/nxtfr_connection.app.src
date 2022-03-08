@@ -10,6 +10,7 @@
     nxtfr_autodiscovery
    ]},
   {env,[
+    {autodiscovery_group, connection},
     {options, [
         {callback_module, nxtfr_dev_connection},
         {transport_module, ssl},

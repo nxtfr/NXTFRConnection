@@ -30,7 +30,9 @@ start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
     
 init([]) ->
+    {ok, AutoDiscoveryGroup} = application:get_env(nxtfr_connection, autodiscovery_group),
     {ok, UserOptions} = application:get_env(nxtfr_connection, options),
+    nxtfr_event:notify({join_autodiscovery_group, AutoDiscoveryGroup}),
     CallbackModule = get_user_option(callback_module, UserOptions, mandatory),
     Port = get_user_option(port, UserOptions, mandatory),
     TransportModule = get_user_option(transport_module, UserOptions, gen_tcp),
