@@ -20,7 +20,8 @@
         {keyfile, "priv/user.key"},
         {packet, 2},
         {port, 2000},
-        {reuseaddr, true}
+        {reuseaddr, true},
+        {activate, false}
     ]}
   ]},
   {modules, [

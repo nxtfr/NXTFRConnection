@@ -97,8 +97,7 @@ accept_ssl(ListenSocket, CallbackModule) ->
             {ok, Socket} = ssl:handshake(TLSTransportSocket),
             case nxtfr_connection_statem_sup:start(CallbackModule, ssl, Socket) of
                 {ok, Pid} ->
-                    ssl:controlling_process(Socket, Pid),
-                    ssl:setopts(Socket, [{active, once}]);
+                    ssl:controlling_process(Socket, Pid);
                 Error ->
                     error_logger:info_report([{accept_ssl, Error}])
             end;
@@ -121,10 +120,20 @@ accept_tcp(ListenSocket, CallbackModule) ->
     end.
 
 extract_tcp_options(UserOptions) ->
-    extract_tcp_options([dhfile, cacertfile, certfile, keyfile, nodelay, packet, reuseaddr], UserOptions, ?DEFAULT_TCP_OPTS, []).
+    extract_tcp_options([
+        dhfile,
+        cacertfile,
+        certfile,
+        keyfile,
+        nodelay,
+        packet,
+        reuseaddr],
+        UserOptions,
+        ?DEFAULT_TCP_OPTS,
+        []).
 
 extract_tcp_options([], _UserOptions, _DefaultOptions, Acc) ->
-    lists:flatten([[binary, {active, false}] | Acc]);
+    lists:flatten([[binary, {active, true}] | Acc]);
 
 extract_tcp_options([Key | Rest], UserOptions, DefaultOptions, Acc) ->
     case proplists:lookup(Key, UserOptions) of
