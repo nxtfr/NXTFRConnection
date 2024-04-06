@@ -37,7 +37,7 @@ init([]) ->
     Port = get_user_option(port, UserOptions, mandatory),
     TransportModule = get_user_option(transport_module, UserOptions, gen_tcp),
     DefaultNumListenProcs = get_user_option(num_listen_procs, UserOptions, 10),
-    TcpOptions = extract_tcp_options(UserOptions),
+    TcpOptions = extract_tcp_options(UserOptions, TransportModule),
     case TransportModule of
         ssl ->
             ssl:start();
@@ -119,12 +119,21 @@ accept_tcp(ListenSocket, CallbackModule) ->
             error_logger:info_report([{accept_tcp, Error}])
     end.
 
-extract_tcp_options(UserOptions) ->
+extract_tcp_options(UserOptions, ssl) ->
     extract_tcp_options([
         dhfile,
         cacertfile,
         certfile,
         keyfile,
+        nodelay,
+        packet,
+        reuseaddr],
+        UserOptions,
+        ?DEFAULT_TCP_OPTS,
+        []);
+
+extract_tcp_options(UserOptions, gen_tcp) ->
+    extract_tcp_options([
         nodelay,
         packet,
         reuseaddr],

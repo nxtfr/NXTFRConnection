@@ -1,6 +1,6 @@
 [{<<"nxtfr_autodiscovery">>,
   {git,"https://github.com/nxtfr/nxtfr_autodiscovery.git",
-       {ref,"d07d270885537d26a954039d057928c1d4f2684a"}},
+       {ref,"1f87a2109b0089ee0b21c97d937bd2fdaf7d9e18"}},
   0},
  {<<"nxtfr_event">>,
   {git,"https://github.com/nxtfr/nxtfr_event.git",
