@@ -17,7 +17,7 @@ init([CallbackModule, TransportModule, Socket]) ->
         transport_module = TransportModule,
         socket = Socket,
         connection_data = undefined},
-    TransportModule:setopts(Socket, [{active, once}]),
+    set_active_once(Socket, TransportModule),
     error_logger:info_msg("Connection established for client ~p.", [Socket]),
     {ok, connected, Data}.
 
@@ -27,7 +27,7 @@ callback_mode() ->
 handle_event(info, {ssl, Socket, Packet}, State, #data{
         callback_module = CallbackModule, transport_module = TransportModule, connection_data = ConnectionData} = Data) ->
     error_logger:info_msg("TCP: ~p ~p.", [Packet, State]),
-    TransportModule:setopts(Socket, [{active, once}]),
+    set_active_once(Socket, TransportModule),
     case apply(CallbackModule, State, [Packet, ConnectionData]) of
         {next_state, NextState, NewConnectionData} ->
             {next_state, NextState, Data#data{connection_data = NewConnectionData}};
@@ -38,8 +38,9 @@ handle_event(info, {ssl, Socket, Packet}, State, #data{
             {next_state, NextState, Data#data{connection_data = NewConnectionData}}
     end;
 
-handle_event(Info, Event, State, Data) ->
+handle_event(Info, Event, State, #data{transport_module = TransportModule, socket = Socket} = Data) ->
     error_logger:info_report({unknown_event, Info, Event, State, Data}),
+    set_active_once(Socket, TransportModule),
     {next_state, State, Data}.
 
 terminate(_Reason, _State, _Data) ->
@@ -50,3 +51,11 @@ code_change(_Vsn, State, Data, _Extra) ->
 
 send_reply(Socket, Reply, TransportModule) ->
     TransportModule:send(Socket, Reply).
+
+set_active_once(Socket, TransportModule) ->
+    case TransportModule of
+        ssl ->
+            TransportModule:setopts(Socket, [{active, once}]);
+        gen_tcp ->
+            inet:setopts(Socket, [{active, once}])
+    end.

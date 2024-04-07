@@ -20,6 +20,7 @@
         {keyfile, "priv/user.key"},
         {packet, 2},
         {port, 2000},
+        {active, false},
         {reuseaddr, true}
     ]}
   ]},
