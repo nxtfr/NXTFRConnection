@@ -20,6 +20,16 @@ connected(<<?LOGIN:8/integer, Packet/binary>>, Data) ->
     String = make_string(<<"Login Successful">>),
     {next_state, logged_in, <<?LOGIN_SUCCESS:8/integer, String/binary>>, Data};
 
+connected(<<
+        Len:8/integer, Str:Len/binary,
+        Float:32/float-little,
+        Int:32/integer-signed-little,
+        Short:16/integer-signed-little,
+        Uint:32/integer-unsigned-little,
+        UShort:16/integer-unsigned-little>> = Message, Data) ->
+    error_logger:info_report({?MODULE, {hello_world_packet, Len, Str, Float, Int, Short, Uint, UShort}, connected, Data}),
+    {next_state, connected, Message, Data};
+
 connected(UnknownPacket, Data) ->
     error_logger:info_report({?MODULE, {unknown_packet, UnknownPacket}, connected, Data}),
     {next_state, connected, noreply, Data}.

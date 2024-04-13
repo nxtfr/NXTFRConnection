@@ -4,7 +4,6 @@
 
 -define(DEFAULT_TCP_OPTS, [
     {nodelay, false},
-    {packet, 2},
     {reuseaddr, true}]).
 
 %% External exports
@@ -97,7 +96,7 @@ accept_ssl(ListenSocket, CallbackModule) ->
             {ok, Socket} = ssl:handshake(TLSTransportSocket),
             case nxtfr_connection_statem_sup:start(CallbackModule, ssl, Socket) of
                 {ok, Pid} ->
-                    ssl:controlling_process(Socket, Pid);
+                    pass;
                 Error ->
                     error_logger:info_report([{accept_ssl, Error}])
             end;
@@ -110,7 +109,7 @@ accept_tcp(ListenSocket, CallbackModule) ->
         {ok, Socket} ->
             case nxtfr_connection_statem_sup:start(CallbackModule, gen_tcp, Socket) of
                 {ok, Pid} ->
-                    gen_tcp:controlling_process(Socket, Pid);
+                    pass;
                 Error ->
                     error_logger:info_report([{accept_tcp, Error}])
             end;
@@ -125,7 +124,6 @@ extract_tcp_options(UserOptions, ssl) ->
         certfile,
         keyfile,
         nodelay,
-        packet,
         reuseaddr],
         UserOptions,
         ?DEFAULT_TCP_OPTS,
@@ -134,14 +132,13 @@ extract_tcp_options(UserOptions, ssl) ->
 extract_tcp_options(UserOptions, gen_tcp) ->
     extract_tcp_options([
         nodelay,
-        packet,
         reuseaddr],
         UserOptions,
         ?DEFAULT_TCP_OPTS,
         []).
 
 extract_tcp_options([], _UserOptions, _DefaultOptions, Acc) ->
-    lists:flatten([[binary, {active, true}] | Acc]);
+    lists:flatten([[{mode, binary}, {packet, raw}, {active, false}] | Acc]);
 
 extract_tcp_options([Key | Rest], UserOptions, DefaultOptions, Acc) ->
     case proplists:lookup(Key, UserOptions) of
