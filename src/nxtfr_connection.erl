@@ -2,12 +2,18 @@
 -author("christian@flodihn.se").
 -behaviour(gen_server).
 
+-define(HEADER_BYTE_SIZE, 2).
+-define(HEADER_BIT_SIZE, 16).
+
 -define(DEFAULT_TCP_OPTS, [
     {nodelay, false},
     {reuseaddr, true}]).
 
 %% External exports
--export([start_link/0]).
+-export([
+    start_link/0,
+    send_to_client/3,
+    wait_for_packets/3]).
 
 %% Internal exports
 -export([acceptor/3]).
@@ -95,7 +101,7 @@ accept_ssl(ListenSocket, CallbackModule) ->
         {ok, TLSTransportSocket} ->
             {ok, Socket} = ssl:handshake(TLSTransportSocket),
             case nxtfr_connection_statem_sup:start(CallbackModule, ssl, Socket) of
-                {ok, Pid} ->
+                {ok, _Pid} ->
                     pass;
                 Error ->
                     error_logger:info_report([{accept_ssl, Error}])
@@ -108,7 +114,7 @@ accept_tcp(ListenSocket, CallbackModule) ->
     case gen_tcp:accept(ListenSocket) of
         {ok, Socket} ->
             case nxtfr_connection_statem_sup:start(CallbackModule, gen_tcp, Socket) of
-                {ok, Pid} ->
+                {ok, _Pid} ->
                     pass;
                 Error ->
                     error_logger:info_report([{accept_tcp, Error}])
@@ -162,3 +168,35 @@ get_user_option(Key, Proplist, mandatory) ->
 get_user_option(Key, Proplist, Default) ->
     proplists:get_value(Key, Proplist, Default).
 
+send_to_client(Socket, Reply, TransportModule) ->
+    MessageSize = byte_size(Reply),
+    Header = <<MessageSize:?HEADER_BIT_SIZE/integer-unsigned-little>>,
+    TransportModule:send(Socket, Header),
+    TransportModule:send(Socket, Reply).
+
+wait_for_packets(ConnectionPid, Socket, TransportModule) ->
+    case wait_for_bytes(?HEADER_BYTE_SIZE, Socket, TransportModule) of
+        {ok, <<MessageSize:16/integer-unsigned-little>>} ->
+            % Receive bytes equal to the size specified in the header
+            case wait_for_bytes(MessageSize, Socket, TransportModule) of
+                {ok, Data} ->
+                    ConnectionPid ! {tcp, Socket, Data},
+                    wait_for_packets(ConnectionPid, Socket, TransportModule);
+                {error, closed} -> pass
+            end;
+        {error, closed} -> pass
+    end.
+
+wait_for_bytes(NumBytes, Socket, TransportModule) ->
+    case TransportModule:recv(Socket, NumBytes) of
+        {ok, Data} -> 
+            {ok, Data};
+        {error, enotconn} ->
+             error_logger:info_msg("Client socket ~p disconnected", [Socket]),
+             {error, tcp_closed};
+        {error, closed} -> 
+             error_logger:info_msg("Client socket ~p disconnected", [Socket]),
+            {error, closed};
+        {error, einval} ->
+            error_logger:error_report("Socket in active mode not supported by transport module ~p.", [TransportModule])
+    end.
