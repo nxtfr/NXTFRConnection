@@ -168,11 +168,11 @@ get_user_option(Key, Proplist, mandatory) ->
 get_user_option(Key, Proplist, Default) ->
     proplists:get_value(Key, Proplist, Default).
 
-send_to_client(Socket, Reply, TransportModule) ->
-    MessageSize = byte_size(Reply),
+send_to_client(Socket, Message, TransportModule) ->
+    MessageSize = byte_size(Message),
     Header = <<MessageSize:?HEADER_BIT_SIZE/integer-unsigned-little>>,
     TransportModule:send(Socket, Header),
-    TransportModule:send(Socket, Reply).
+    TransportModule:send(Socket, Message).
 
 wait_for_packets(ConnectionPid, Socket, TransportModule) ->
     case wait_for_bytes(?HEADER_BYTE_SIZE, Socket, TransportModule) of
