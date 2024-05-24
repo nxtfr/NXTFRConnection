@@ -18,7 +18,7 @@ init([CallbackModule, TransportModule, Socket]) ->
         transport_module = TransportModule,
         socket = Socket,
         connection_data = ConnectionData},
-    error_logger:info_msg("Connection established for client ~p.", [Socket]),
+    error_logger:info_msg("Connection established for client ~p (~p).", [Socket, TransportModule]),
     GenStatemPid = self(),
     spawn_link(fun() -> nxtfr_connection:wait_for_packets(GenStatemPid, Socket, TransportModule) end),
     {ok, connected, Data}.
