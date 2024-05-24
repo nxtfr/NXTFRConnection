@@ -12,7 +12,7 @@ start_link(CallbackModule, TransportModule, Socket) ->
     gen_statem:start_link(?MODULE, [CallbackModule, TransportModule, Socket], []).
 
 init([CallbackModule, TransportModule, Socket]) ->
-    ConnectionData = CallbackModule:init(Socket),
+    ConnectionData = CallbackModule:init(Socket, TransportModule),
     Data = #data{
         callback_module = CallbackModule,
         transport_module = TransportModule,
