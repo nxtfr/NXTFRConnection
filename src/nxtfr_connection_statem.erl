@@ -50,7 +50,11 @@ handle_event(info, {tcp, Socket, Packet}, State, #data{
             {next_state, NextState, Data#data{connection_data = NewConnectionData}}
     end;
 
-handle_event(info, Event, State, Data) ->
+handle_event(info, Event, State, #data{
+        socket = Socket,
+        callback_module = CallbackModule,
+        transport_module = TransportModule,
+        connection_data = ConnectionData} = Data) ->
     case apply(CallbackModule, State, [Event, ConnectionData]) of
         {next_state, NextState, NewConnectionData} ->
             {next_state, NextState, Data#data{connection_data = NewConnectionData}};
