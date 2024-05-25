@@ -51,8 +51,15 @@ handle_event(info, {tcp, Socket, Packet}, State, #data{
     end;
 
 handle_event(info, Event, State, Data) ->
-    error_logger:info_msg("Unknown event: ~p.", [Event]),
-    {next_state, State, Data}.
+    case apply(CallbackModule, State, [Event, ConnectionData]) of
+        {next_state, NextState, NewConnectionData} ->
+            {next_state, NextState, Data#data{connection_data = NewConnectionData}};
+        {next_state, NextState, noreply, NewConnectionData} ->
+            {next_state, NextState, Data#data{connection_data = NewConnectionData}};
+        {next_state, NextState, Reply, NewConnectionData} ->
+            nxtfr_connection:send_to_client(Socket, Reply, TransportModule),
+            {next_state, NextState, Data#data{connection_data = NewConnectionData}}
+    end.
 
 terminate(_Reason, _State, _Data) ->
     ok.
