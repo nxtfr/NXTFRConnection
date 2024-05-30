@@ -182,9 +182,10 @@ wait_for_packets(ConnectionPid, Socket, TransportModule) ->
                 {ok, Data} ->
                     ConnectionPid ! {tcp, Socket, Data},
                     wait_for_packets(ConnectionPid, Socket, TransportModule);
-                {error, closed} -> pass
+                {error, closed} -> 
+                    ConnectionPid ! {tcp, Socket, closed}
             end;
-        {error, closed} -> pass
+        ConnectionPid ! {tcp, Socket, closed}
     end.
 
 wait_for_bytes(NumBytes, Socket, TransportModule) ->
