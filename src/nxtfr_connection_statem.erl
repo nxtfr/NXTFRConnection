@@ -5,68 +5,63 @@
 -export([start_link/3]).
 -export([init/1, callback_mode/0, handle_event/4, terminate/3, code_change/4]).
 
--record(data, {callback_module, transport_module, socket, connection_data}).
+-record(state_data, {callback_module, transport_module, socket, fsm_state_data, socket_listener_pid}).
 
 %% Transport module is either ssl or gen_tcp
 start_link(CallbackModule, TransportModule, Socket) ->
     gen_statem:start_link(?MODULE, [CallbackModule, TransportModule, Socket], []).
 
 init([CallbackModule, TransportModule, Socket]) ->
-    ConnectionData = CallbackModule:init(Socket, TransportModule),
-    Data = #data{
+    FsmStateData = CallbackModule:init(Socket, TransportModule),
+    SocketListenerPid = spawn_link(fun() -> nxtfr_connection:wait_for_packets(self(), Socket, TransportModule) end),
+    StateData = #state_data{
         callback_module = CallbackModule,
         transport_module = TransportModule,
         socket = Socket,
-        connection_data = ConnectionData},
+        fsm_state_data = FsmStateData,
+        socket_listener_pid = SocketListenerPid},
     error_logger:info_msg("Connection established for client ~p (~p).", [Socket, TransportModule]),
-    GenStatemPid = self(),
-    spawn_link(fun() -> nxtfr_connection:wait_for_packets(GenStatemPid, Socket, TransportModule) end),
-    {ok, connected, Data}.
+    {ok, connected, StateData}.
 
 callback_mode() ->
     handle_event_function.
 
-handle_event(info, {ssl, Socket, Packet}, State, #data{
-        callback_module = CallbackModule, transport_module = TransportModule, connection_data = ConnectionData} = Data) ->
-    case apply(CallbackModule, State, [Packet, ConnectionData]) of
-        {next_state, NextState, NewConnectionData} ->
-            {next_state, NextState, Data#data{connection_data = NewConnectionData}};
-        {next_state, NextState, noreply, NewConnectionData} ->
-            {next_state, NextState, Data#data{connection_data = NewConnectionData}};
-        {next_state, NextState, Reply, NewConnectionData} ->
-            nxtfr_connection:send_to_client(Socket, Reply, TransportModule),
-        {next_state, NextState, Data#data{connection_data = NewConnectionData}}
-    end;
+handle_event(info, {ssl, _Socket, closed}, State, StateData) ->
+    apply_callback(State, {socket, closed}, StateData);
 
-handle_event(info, {tcp, Socket, Packet}, State, #data{
-        callback_module = CallbackModule, transport_module = TransportModule, connection_data = ConnectionData} = Data) ->
-    case apply(CallbackModule, State, [Packet, ConnectionData]) of
-        {next_state, NextState, NewConnectionData} ->
-            {next_state, NextState, Data#data{connection_data = NewConnectionData}};
-        {next_state, NextState, noreply, NewConnectionData} ->
-            {next_state, NextState, Data#data{connection_data = NewConnectionData}};
-        {next_state, NextState, Reply, NewConnectionData} ->
-            nxtfr_connection:send_to_client(Socket, Reply, TransportModule),
-            {next_state, NextState, Data#data{connection_data = NewConnectionData}}
-    end;
+handle_event(info, {ssl, _Socket, Packet}, State, StateData) ->
+    apply_callback(State, {socket, Packet}, StateData);
 
-handle_event(info, Event, State, #data{
-        socket = Socket,
-        callback_module = CallbackModule,
-        transport_module = TransportModule,
-        connection_data = ConnectionData} = Data) ->
-    case apply(CallbackModule, State, [Event, ConnectionData]) of
-        {next_state, NextState, NewConnectionData} ->
-            {next_state, NextState, Data#data{connection_data = NewConnectionData}};
-        {next_state, NextState, noreply, NewConnectionData} ->
-            {next_state, NextState, Data#data{connection_data = NewConnectionData}};
-        {next_state, NextState, Reply, NewConnectionData} ->
-            nxtfr_connection:send_to_client(Socket, Reply, TransportModule),
-            {next_state, NextState, Data#data{connection_data = NewConnectionData}}
-    end.
+handle_event(info, {tcp, _Socket, closed}, State, StateData) ->
+    apply_callback(State, {socket, closed}, StateData);
 
-terminate(_Reason, _State, _Data) ->
+handle_event(info, {tcp, _Socket, Packet}, State, StateData) ->
+    apply_callback(State, {socket, Packet}, StateData);
+
+handle_event(info, Event, State, StateData) ->
+    apply_callback(State, {info, Event}, StateData).
+
+terminate(_Reason, _State, _State) ->
     ok.
 
-code_change(_Vsn, State, Data, _Extra) ->
-    {ok, State, Data}.
+code_change(_Vsn, State, StateData, _Extra) ->
+    {ok, State, StateData}.
+
+apply_callback(State, Event, #state_data{
+        callback_module = CallbackModule,
+        transport_module = TransportModule,
+        socket = Socket,
+        fsm_state_data = FsmStateData,
+        socket_listener_pid = SocketListenerPid} = StateData) ->
+    case apply(CallbackModule, State, [Event, FsmStateData]) of
+        {next_state, NextState, NewFsmStateData} ->
+            {next_state, NextState, StateData#state_data{fsm_state_data = NewFsmStateData}};
+        {next_state, NextState, noreply, NewFsmStateData} ->
+            {next_state, NextState, StateData#state_data{fsm_state_data = NewFsmStateData}};
+        {next_state, NextState, Reply, NewFsmStateData} ->
+            nxtfr_connection:send_to_client(Socket, Reply, TransportModule),
+            {next_state, NextState, StateData#state_data{fsm_state_data = NewFsmStateData}};
+        {stop, Reason} ->
+            exit(SocketListenerPid, normal),
+            exit(Reason)
+    end.
