@@ -180,11 +180,11 @@ wait_for_packets(ConnectionPid, Socket, TransportModule) ->
             % Receive bytes equal to the size specified in the header
             case wait_for_bytes(MessageSize, Socket, TransportModule) of
                 {ok, Packet} ->
-                    ConnectionPid ! {tcp, Socket, Packet},
+                    ConnectionPid ! {received_packet, Packet},
                     wait_for_packets(ConnectionPid, Socket, TransportModule);
-                {error, closed} -> ConnectionPid ! {tcp, Socket, socket_closed}
+                {error, closed} -> ConnectionPid ! socket_closed
             end;
-        {error, closed} -> ConnectionPid ! {tcp, Socket, socket_closed}
+        {error, closed} -> ConnectionPid ! socket_closed
     end.
 
 wait_for_bytes(NumBytes, Socket, TransportModule) ->

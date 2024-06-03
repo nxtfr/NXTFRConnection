@@ -27,20 +27,16 @@ init([CallbackModule, TransportModule, Socket]) ->
 callback_mode() ->
     handle_event_function.
 
-handle_event(info, {ssl, _Socket, closed}, State, StateData) ->
-    apply_callback(State, {socket, closed}, StateData);
+handle_event(info, socket_closed, State, #state_data{socket_listener_pid = SocketListenerPid} = StateData) ->
+    apply_callback(State, socket_closed, StateData),
+    exit(SocketListenerPid, normal),
+    {stop, normal};
 
-handle_event(info, {ssl, _Socket, Packet}, State, StateData) ->
-    apply_callback(State, {socket, Packet}, StateData);
-
-handle_event(info, {tcp, _Socket, closed}, State, StateData) ->
-    apply_callback(State, {socket, closed}, StateData);
-
-handle_event(info, {tcp, _Socket, Packet}, State, StateData) ->
-    apply_callback(State, {socket, Packet}, StateData);
+handle_event(info, {received_packet, _Packet} = ReceivedPacketEvent, State, StateData) ->
+    apply_callback(State, ReceivedPacketEvent, StateData);
 
 handle_event(info, Event, State, StateData) ->
-    apply_callback(State, {info, Event}, StateData).
+    apply_callback(State, Event, StateData).
 
 terminate(_Reason, _State, _State) ->
     ok.
@@ -52,8 +48,7 @@ apply_callback(State, Event, #state_data{
         callback_module = CallbackModule,
         transport_module = TransportModule,
         socket = Socket,
-        fsm_state_data = FsmStateData,
-        socket_listener_pid = SocketListenerPid} = StateData) ->
+        fsm_state_data = FsmStateData} = StateData) ->
     case apply(CallbackModule, State, [Event, FsmStateData]) of
         {next_state, NextState, NewFsmStateData} ->
             {next_state, NextState, StateData#state_data{fsm_state_data = NewFsmStateData}};
@@ -61,8 +56,5 @@ apply_callback(State, Event, #state_data{
             {next_state, NextState, StateData#state_data{fsm_state_data = NewFsmStateData}};
         {next_state, NextState, Reply, NewFsmStateData} ->
             nxtfr_connection:send_to_client(Socket, Reply, TransportModule),
-            {next_state, NextState, StateData#state_data{fsm_state_data = NewFsmStateData}};
-        {stop, Reason} ->
-            exit(SocketListenerPid, normal),
-            exit(Reason)
+            {next_state, NextState, StateData#state_data{fsm_state_data = NewFsmStateData}}
     end.
