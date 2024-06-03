@@ -179,8 +179,8 @@ wait_for_packets(ConnectionPid, Socket, TransportModule) ->
         {ok, <<MessageSize:16/integer-unsigned-little>>} ->
             % Receive bytes equal to the size specified in the header
             case wait_for_bytes(MessageSize, Socket, TransportModule) of
-                {ok, Data} ->
-                    ConnectionPid ! {tcp, Socket, Data},
+                {ok, Packet} ->
+                    ConnectionPid ! {tcp, Socket, Packet},
                     wait_for_packets(ConnectionPid, Socket, TransportModule);
                 {error, closed} -> ConnectionPid ! {tcp, Socket, closed}
             end;
@@ -189,8 +189,8 @@ wait_for_packets(ConnectionPid, Socket, TransportModule) ->
 
 wait_for_bytes(NumBytes, Socket, TransportModule) ->
     case TransportModule:recv(Socket, NumBytes) of
-        {ok, Data} -> 
-            {ok, Data};
+        {ok, Packet} -> 
+            {ok, Packet};
         {error, enotconn} ->
              error_logger:info_msg("Client socket ~p disconnected", [Socket]),
              {error, tcp_closed};

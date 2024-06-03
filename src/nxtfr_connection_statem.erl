@@ -13,7 +13,8 @@ start_link(CallbackModule, TransportModule, Socket) ->
 
 init([CallbackModule, TransportModule, Socket]) ->
     FsmStateData = CallbackModule:init(Socket, TransportModule),
-    SocketListenerPid = spawn_link(fun() -> nxtfr_connection:wait_for_packets(self(), Socket, TransportModule) end),
+    Self = self(),
+    SocketListenerPid = spawn_link(fun() -> nxtfr_connection:wait_for_packets(Self, Socket, TransportModule) end),
     StateData = #state_data{
         callback_module = CallbackModule,
         transport_module = TransportModule,
