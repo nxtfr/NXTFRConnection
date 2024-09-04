@@ -38,7 +38,7 @@ handle_event(info, {received_packet, _Packet} = ReceivedPacketEvent, State, Stat
 handle_event(info, Event, State, StateData) ->
     apply_callback(State, Event, StateData).
 
-terminate(_Reason, _State, _State) ->
+terminate(_Reason, _State, _FsmStateData) ->
     ok.
 
 code_change(_Vsn, State, StateData, _Extra) ->
